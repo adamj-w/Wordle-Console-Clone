@@ -2,11 +2,16 @@
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
+#include <errno.h>
+#include <signal.h>
 
 #include "dictionary.h"
 #include "wordle_board.h"
 #include "getopt.h"
 
+board_t* board;
+
+void sigint_handler(int param);
 void print_help(void);
 
 const char* get_input_sanitized(board_t*);
@@ -44,6 +49,8 @@ int main(int argc, char* argv[]) {
 		}
 	}
 
+	signal(SIGINT, sigint_handler);
+
 	dict_t* list;
 	if (dict_filename) {
 		list = dictionary_from_file(dict_filename, 0);
@@ -56,41 +63,40 @@ int main(int argc, char* argv[]) {
 		return EXIT_FAILURE;
 	}
 
-	board_t* brd;
 	if (answer) {
 		if (!dictionary_contains(list, answer)) {
 			puts("User answer isn't contained in the provided dictionary!\n");
 			return EXIT_FAILURE;
 		}
-		brd = wordle_board_new_with_answer(num_trys, answer);
+		board = wordle_board_new_with_answer(num_trys, answer);
 	}
 	else {
-		brd = wordle_board_new_with_dict(num_trys, list, 5, 5);
+		board = wordle_board_new_with_dict(num_trys, list, 5, 5);
 	}
 
-	if (!brd) {
+	if (!board) {
 		return EXIT_FAILURE;
 	}
-	board_print(brd);
+	board_print(board);
 
-	const char* input = get_input_valid(brd, list);
+	const char* input = get_input_valid(board, list);
 	printf("Entered the word %s\n", input);
 
 	int res;
-	while ((res = board_insert_guess(brd, input)) == 0) {
-		board_print(brd);
+	while ((res = board_insert_guess(board, input)) == 0) {
+		board_print(board);
 		free((void*)input);
-		input = get_input_valid(brd, list);
+		input = get_input_valid(board, list);
 	}
 
-	board_print(brd);
+	board_print(board);
 	free((void*)input);
 
 	if (res == 2) {
-		printf("Better luck next time, the answer was \"%s\"", brd->answer);
+		printf("Better luck next time, the answer was \"%s\"", board->answer);
 	}
 
-	board_destroy(brd);
+	board_destroy(board);
 	dictionary_destroy(list);
 	return 0;
 }
@@ -99,6 +105,13 @@ void print_help(void) {
 	puts(" -a answer\t Answer to the board.");
 	puts(" -d file  \t Location to a dictionary file in plain text form.");
 	puts(" -t num   \t Number of rounds. (default=5)");
+}
+
+void sigint_handler(int param) {
+	if(board) {
+		printf("\nThe answer was \"%s\"\n", board->answer);
+	}
+	exit(0);
 }
 
 const char* get_input_valid(board_t* brd, dict_t* dict) {
