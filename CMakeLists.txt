@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.3)
+cmake_minimum_required(VERSION 3.18)
 project(Wordle VERSION 1.0.0 LANGUAGES C)
 
 file(DOWNLOAD "http://www.gwicks.net/textlists/engmix.zip" ${CMAKE_BINARY_DIR}/engmix.zip)
