@@ -14,8 +14,8 @@ Board* board;
 void print_help(void);
 extern "C" void sigint_handler(int);
 
-const char* get_input_sanitized(Board*);
-const char* get_input_valid(Board*, Dictionary* dict);
+const std::string get_sanitized_input(Board*);
+const std::string get_input_valid(Board*, Dictionary* dict);
 
 int main(int argc, char* argv[]) {
 	std::cout << "Wordle clone by Adam Warren (c) 2022" << std::endl;
@@ -72,18 +72,16 @@ int main(int argc, char* argv[]) {
 	
 	board->Print();
 
-	const char* input = get_input_valid(board, list);
+	auto input = get_input_valid(board, list);
 	std::cout << "Entered the word " << input << std::endl;
 
 	int res;
 	while ((res = board->InsertGuess(input)) == 0) {
 		board->Print();
-		delete input;
 		input = get_input_valid(board, list);
 	}
 
 	board->Print();
-	delete input;
 
 	if (res == 2) {
 		std::cout << "Better luck next time, the answer was " << std::quoted(board->GetAnswer()) << std::endl;
@@ -95,7 +93,7 @@ int main(int argc, char* argv[]) {
 }
 
 void sigint_handler(int param) {
-	if (board) std::cout << "The answer was " << std::quoted(board->GetAnswer()) << std::endl;
+	if (board) std::cout << std::endl << "The answer was " << std::quoted(board->GetAnswer()) << std::endl;
 	exit(0);
 }
 
@@ -105,40 +103,27 @@ void print_help(void) {
 	std::cout << " -t num   \t Number of rounds. (default=5)" << std::endl;
 }
 
-const char* get_input_valid(Board* brd, Dictionary* dict) {
+const std::string get_input_valid(Board* brd, Dictionary* dict) {
 	while (1) {
-		const char* input = get_input_sanitized(brd);
+		const std::string input = get_sanitized_input(brd);
 		if (dict->Contains(input)) return input;
-		delete input;
 		std::cout << "Enter a valid english word." << std::endl;
 	}
 }
 
-const char* get_input_sanitized(Board* brd) {
-	size_t maxlen = brd->GetLength() + 50;
-	char* str = new char[maxlen];
-	
+const std::string get_sanitized_input(Board* brd) {
 	while (1) {
 		printf("Enter a %zu letter word to try: ", brd->GetLength());
-		fgets(str, (int)maxlen, stdin);
-		size_t len = strnlen(str, maxlen);
-		if (len != brd->GetLength() + 1) { printf("The word entered was not %zu letters long!\n", brd->GetLength()); continue; }
+		std::string str;
+		std::getline(std::cin, str);
+		if (str.length() != brd->GetLength()) { printf("The word entered was not %zu letters long!\n", brd->GetLength()); continue; }
 
 		bool invalid = false;
-		for (size_t i = 0; i < brd->GetLength(); i++) {
-			char c = str[i];
-			if ('A' <= c && c <= 'Z') {
-				str[i] = c += 'a' - 'A';
-			}
-			
-			if ('a' > c || c > 'z') {
-				printf("Invalid character detected. Please enter only alphabetical letters!\n"); invalid = true; break;
-			}
-		}
-		if (!invalid || str[brd->GetLength()] != '\n')
-			break;
-	}
+		std::for_each(str.begin(), str.end(), [&invalid](char& c) {
+			if (std::isupper(c)) c += 'a' - 'A';
+			if (!std::islower(c)) { std::cout << "Please enter only letters!" << std::endl; invalid = true; }
+		});
 
-	str[brd->GetLength()] = '\0';
-	return str;
+		if (!invalid) return str;
+	}
 }

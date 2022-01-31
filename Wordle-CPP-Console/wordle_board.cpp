@@ -138,7 +138,7 @@ int board_insert_guess(board_t* brd, const char* guess) {
 }
 */
 
-const std::string_view _formats[] = { "\033[0m", "\033[30;1m", "\033[33;1m", "\33[32;1m" };
+const std::string_view _formats[] = { "\033[0m", "\033[30;1m", "\033[33;1m", "\033[32;1m" };
 
 Board::Board(uint8_t trys, Dictionary* dict, size_t minWordLen, size_t maxWordLen)
 	: currentRow(0), attempts(trys) {
