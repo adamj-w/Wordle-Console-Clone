@@ -197,7 +197,7 @@ void Board::Print() const {
 
 int Board::InsertGuess(const std::string& guess) {
 	for (size_t i = 0; i < wordLen; ++i) {
-		auto& pair = board[currentRow * attempts + i];
+		auto& pair = board[currentRow * wordLen + i];
 		pair.first = guess[i];
 		const auto& idx = std::find(answer.cbegin(), answer.cend(), guess[i]);
 		if (answer[i] == guess[i]) {

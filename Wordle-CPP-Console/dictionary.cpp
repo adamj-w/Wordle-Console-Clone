@@ -1,5 +1,6 @@
 #include "dictionary.hpp"
 
+#include <algorithm>
 #include <fstream>
 #include <iostream>
 
@@ -58,7 +59,7 @@ dict_t* dictionary_from_file(const char* file, dictionary_load_flags_t flags) {
 				if (valid && i - offset == tgt_len) {
 					out->words[word_idx++] = &buf[offset];
 				} else
-					out->word_count--; 
+					out->word_count--;
 
 				buf[i] = '\0';
 				offset = i + 1;
@@ -329,8 +330,8 @@ Dictionary::Dictionary(const std::filesystem::path& filepath, LoadFlags flags)
 			if ((uint32_t)flags & (uint32_t)LoadFlags::LOWER_ONLY && ('a' > ch || ch > 'z')) { valid = false; break; }
 			else if (!std::isalpha(ch)) { valid = false; break; }
 		}
-		
-		if(valid) dictionary.push_back(tmp);
+
+		if (valid) dictionary.push_back(tmp);
 	}
 
 	f.close();
@@ -343,7 +344,7 @@ bool Dictionary::Contains(const std::string& str) {
 std::optional<size_t> Dictionary::IndexOf(const std::string& str) {
 	const auto& iter = std::find_if(dictionary.cbegin(), dictionary.cend(), [str](const std::string& a) {
 		return a == str;
-	});
+		});
 
 	if (iter == dictionary.cend()) return std::nullopt;
 
@@ -361,16 +362,16 @@ void Dictionary::PrintSublist(size_t offset, size_t count) const {
 void Dictionary::SanitizeToLower() {
 	const auto& end = std::remove_if(dictionary.begin(), dictionary.end(), [](const std::string& a) {
 		return std::find_if(a.begin(), a.end(), [](char c) { return !std::islower(c); }) != a.end();
-	});
+		});
 
 	dictionary.erase(end, dictionary.end());
 	dictionary.shrink_to_fit();
 }
 
 void Dictionary::SanitizeToLength(size_t length) {
-	const auto& end = std::remove_if(dictionary.begin(), dictionary.end(), [length](const std::string& a) { 
+	const auto& end = std::remove_if(dictionary.begin(), dictionary.end(), [length](const std::string& a) {
 		return a.length() != length;
-	});
+		});
 
 	dictionary.erase(end, dictionary.end());
 	dictionary.shrink_to_fit();

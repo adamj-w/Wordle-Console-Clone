@@ -3,12 +3,16 @@
 #include <ctime>
 #include <iostream>
 #include <iomanip>
+#include <csignal>
 
 #include "dictionary.hpp"
 #include "wordle_board.hpp"
 #include "getopt.h"
 
+Board* board;
+
 void print_help(void);
+extern "C" void sigint_handler(int);
 
 const char* get_input_sanitized(Board*);
 const char* get_input_valid(Board*, Dictionary* dict);
@@ -45,6 +49,8 @@ int main(int argc, char* argv[]) {
 		}
 	}
 
+	std::signal(SIGINT, sigint_handler);
+
 	Dictionary* list;
 	if (dict_filename) {
 		list = new Dictionary(std::filesystem::path(dict_filename));
@@ -52,41 +58,45 @@ int main(int argc, char* argv[]) {
 		list = new Dictionary("engmix.txt", Dictionary::LoadFlags::LOWER_ONLY);
 	}
 
-	Board* brd;
 	if (answer) {
 		if(!list->Contains(answer)) {
 			std::cout << "User answer isn't contained in the provided dictionary!" << std::endl;
 			return EXIT_FAILURE;
 		}
-		brd = new Board(num_trys, answer);
+		board = new Board(num_trys, answer);
 	}
 	else {
-		brd = new Board(num_trys, list, 5, 5);
+		board = new Board(num_trys, list, 5, 5);
 	}
 
 	
-	brd->Print();
+	board->Print();
 
-	const char* input = get_input_valid(brd, list);
+	const char* input = get_input_valid(board, list);
 	std::cout << "Entered the word " << input << std::endl;
 
 	int res;
-	while ((res = brd->InsertGuess(input)) == 0) {
-		brd->Print();
+	while ((res = board->InsertGuess(input)) == 0) {
+		board->Print();
 		delete input;
-		input = get_input_valid(brd, list);
+		input = get_input_valid(board, list);
 	}
 
-	brd->Print();
+	board->Print();
 	delete input;
 
 	if (res == 2) {
-		std::cout << "Better luck next time, the answer was " << std::quoted(brd->GetAnswer()) << std::endl;
+		std::cout << "Better luck next time, the answer was " << std::quoted(board->GetAnswer()) << std::endl;
 	}
 	
-	delete brd;
+	delete board;
 	delete list;
 	return 0;
+}
+
+void sigint_handler(int param) {
+	if (board) std::cout << "The answer was " << std::quoted(board->GetAnswer()) << std::endl;
+	exit(0);
 }
 
 void print_help(void) {
